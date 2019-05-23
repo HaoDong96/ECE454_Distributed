@@ -1,6 +1,6 @@
 import java.io.*;
 import java.net.*;
-
+import java.nio.charset.*;
 class CCServer {
     public static void main(String args[]) throws Exception {
 		if (args.length != 1) {
@@ -24,6 +24,13 @@ class CCServer {
 			- the payload is a string
 				(UTF-8, big-endian)
 			*/
+			Socket acceptSock = ssock.accept();
+			DataInputStream din = new DataInputStream(acceptSock.getInputStream());
+			int acceptDataLen = din.readInt();
+			byte[] bytes = new byte[acceptDataLen];
+			din.readFully(bytes);
+			String output = new String(bytes, StandardCharsets.UTF_8);
+			System.out.println(din);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
