@@ -11,10 +11,10 @@ if [ $? -ne 0 ]; then
 fi
 
 echo --- Running
-echo -n "Enter dataSet: "
-read DATASET
-SAMPLE_INPUT=sample_input/$DATASET.txt
-SAMPLE_OUTPUT=sample_output/$DATASET.out
+echo -n "Enter sample:"
+read SAMPLE
+SAMPLE_INPUT=sample_input/$SAMPLE.txt
+SAMPLE_OUTPUT=sample_output/$SAMPLE.out
 SERVER_HOST=localhost
 echo -n "Enter the server's TCP port number: "
 read SERVER_PORT
