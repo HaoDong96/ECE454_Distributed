@@ -91,7 +91,7 @@ class CCServer {
 				System.out.printf("%d ms spent in receiving data\n", t1 - t0);
 
 
-				List<int[]> ls = new LinkedList<>();
+
 
 				String temp;
 				System.out.println(inDataLen);
@@ -102,16 +102,11 @@ class CCServer {
 
 					int i = Integer.valueOf(temp.split(" ")[0]);
 					int j = Integer.valueOf(temp.split(" ")[1]);
-					ls.add(new int[]{i, j});
+					union(i, j);
 				}
 
 				long tReadString = System.currentTimeMillis();
 				System.out.printf("%d ms spent in reading string\n", tReadString - t1);
-
-				hm = new HashMap<>();
-				for (int[] pair : ls) {
-					union(pair[0], pair[1]);
-				}
 
 
 				long t2 = System.currentTimeMillis();
