@@ -81,7 +81,7 @@ class CCServer {
 
 				// Receive from client
 			    Socket csock = ssock.accept();
-
+				hm = new HashMap<>();
 				long t0 = System.currentTimeMillis();
 				DataInputStream din = new DataInputStream(csock.getInputStream());
 				int inDataLen = din.readInt();
@@ -89,7 +89,6 @@ class CCServer {
 
 				long t1 = System.currentTimeMillis();
 				System.out.printf("%d ms spent in receiving data\n", t1 - t0);
-
 
 
 
