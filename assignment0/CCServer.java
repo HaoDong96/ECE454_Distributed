@@ -2,10 +2,8 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.*;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
-import javax.swing.plaf.synth.SynthTextAreaUI;
+import java.util.LinkedList;
+import java.util.List;
 
 class CCServer {
 
@@ -26,24 +24,27 @@ class CCServer {
     }
 
     static void setParent(int n, int p) {
-        hs.get(n)[1] = p;
+        if (p != -1)
+            hs.get(n)[1] = p;
     }
 
-    static int root(int n) {
+    static int find(int n) {
         while (parent(n) != -1) {
+            int i = n;
             n = parent(n);
+            setParent(i, parent(n));
         }
         return n;
     }
 
     static void union(int a, int b) {
         if (!hs.containsKey(a))
-            hs.put(a, new int[] {0, -1});
+            hs.put(a, new int[]{0, -1});
         if (!hs.containsKey(b))
-            hs.put(b, new int[] {0, -1});
+            hs.put(b, new int[]{0, -1});
 
-        int rootA = root(a);
-        int rootB = root(b);
+        int rootA = find(a);
+        int rootB = find(b);
 
         if (rootA == rootB)
             return;
@@ -54,11 +55,9 @@ class CCServer {
             setParent(rootA, rootB);
         } else {
             setParent(rootB, rootA);
-            setRank(rootA, rank(rootA)+1);
+            setRank(rootA, rank(rootA) + 1);
         }
     }
-
-
 
 
     public static void main(String args[]) throws Exception {
@@ -87,11 +86,13 @@ class CCServer {
                 Socket acceptSock = ssock.accept();
                 DataInputStream din = new DataInputStream(acceptSock.getInputStream());
                 int acceptDataLen = din.readInt();
+                System.out.println("received data with payload of length " + acceptDataLen);
                 byte[] bytes = new byte[acceptDataLen];
                 din.readFully(bytes);
                 String input = new String(bytes, StandardCharsets.UTF_8);
 
                 //parse the input numbers, save them into HashMap and union them
+                hs = new HashMap<>();
                 String[] lines = input.split("\n");
                 int i;
                 int j;
@@ -99,25 +100,28 @@ class CCServer {
                 for (String line : lines) {
                     i = Integer.valueOf(line.split(" ")[0]);
                     j = Integer.valueOf(line.split(" ")[1]);
-
-                    union(i,j);
-
-                    System.out.println(i);
-                    System.out.println(j);
-                    System.out.println("#############");
+                    union(i, j);
                 }
+
+
+
                 //output
                 DataOutputStream dout = new DataOutputStream(acceptSock.getOutputStream());
                 StringBuilder output = new StringBuilder();
-                System.out.println(hs.size());
                 for (int node: hs.keySet()){
-                    output.append(String.format("%d %d\n", node, root(node)));
+                    output.append(String.format("%d %d\n", node, find(node)));
                 }
-                System.out.println(output);
+
+
+
+//                System.out.println(output);
                 byte[] resp = output.toString().getBytes();
+
                 dout.writeInt(resp.length);
                 dout.write(resp);
                 dout.flush();
+                dout.close();
+                acceptSock.close();
 
 
             } catch (Exception e) {
