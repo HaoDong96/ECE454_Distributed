@@ -87,13 +87,9 @@ class CCServer {
 				int inDataLen = din.readInt();
 				BufferedReader bf = new BufferedReader(new InputStreamReader(din));
 
-				long t1 = System.currentTimeMillis();
-				System.out.printf("%d ms spent in receiving data\n", t1 - t0);
-
 
 
 				String temp;
-				System.out.println(inDataLen);
 				while(inDataLen > 0){
 					temp = bf.readLine();
 					inDataLen -= temp.getBytes().length;
@@ -104,12 +100,6 @@ class CCServer {
 					union(i, j);
 				}
 
-				long tReadString = System.currentTimeMillis();
-				System.out.printf("%d ms spent in reading string\n", tReadString - t1);
-
-
-				long t2 = System.currentTimeMillis();
-				System.out.printf("%d ms spent in performing union\n", t2 - tReadString);
 
 				// Response to client
 				DataOutputStream dout = new DataOutputStream(csock.getOutputStream());
@@ -118,17 +108,12 @@ class CCServer {
 					output.append(node).append(" ").append(find(node)).append("\n");
 				}
 
-				long t3 = System.currentTimeMillis();
-				System.out.printf("%d ms spent in making string\n", t3 - t2);
-
+			
 				byte[] resp = output.toString().getBytes();
 				dout.writeInt(resp.length);
 				dout.write(resp);
 				dout.flush();
 				dout.close();
-
-				long endTime = System.currentTimeMillis();
-				System.out.printf("%d ms spent in response\n", endTime - t3);
 
 			} catch (Exception e) {
 				e.printStackTrace();
