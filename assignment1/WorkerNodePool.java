@@ -31,6 +31,7 @@ class WorkerNode {
     private TSocket sock;
     private TTransport tTransport;
     private TProtocol tProtocol;
+    private int workload;
 
     public WorkerNode(String host, short port) {
         this.host = host;
@@ -39,9 +40,10 @@ class WorkerNode {
         this.tTransport = new TFramedTransport(sock);
         this.tProtocol = new TBinaryProtocol(tTransport);
         this.clientToWorker = new BcryptService.Client(tProtocol);
+        this.workload = 0;
     }
 
-    List<String> hashPassword(List<String> password, short logRounds) throws TException {
+    List<String> assignHashPassword(List<String> password, short logRounds) throws TException {
         if (!tTransport.isOpen())
             tTransport.open();
         List<String> res = clientToWorker.BEhashPassword(password, logRounds);
@@ -49,7 +51,7 @@ class WorkerNode {
         return res;
     }
 
-    List<Boolean> checkPassword(List<String> password, List<String> hash) throws TException {
+    List<Boolean> assignCheckPassword(List<String> password, List<String> hash) throws TException {
         if (!tTransport.isOpen()) {
             tTransport.open();
         }

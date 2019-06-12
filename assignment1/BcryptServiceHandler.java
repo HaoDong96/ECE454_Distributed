@@ -7,11 +7,19 @@ import java.util.List;
 public class BcryptServiceHandler implements BcryptService.Iface {
     @Override
     public List<String> hashPassword(List<String> password, short logRounds) throws IllegalArgument, TException {
+        if (password.isEmpty()) {
+            throw new IllegalArgument("Password list empty");
+        }
+
+        if (logRounds < 4 || logRounds > 30) {
+            throw new IllegalArgument("Illegal logRound argument. BCrypt supports rounds between 4 and 30 (inclusive).");
+        }
+
         WorkerNode wn = WorkerNodePool.getAvailableWorker();
         List<String> res;
         if (wn != null) {
             System.out.println("Found available worker " + wn);
-            res = wn.hashPassword(password, logRounds);
+            res = wn.assignHashPassword(password, logRounds);
         } else {
             System.out.println("No worker available. Processing by FE...");
             res = hashPasswordCore(password, logRounds);
@@ -21,11 +29,15 @@ public class BcryptServiceHandler implements BcryptService.Iface {
 
     @Override
     public List<Boolean> checkPassword(List<String> password, List<String> hash) throws IllegalArgument, TException {
+        if (password.isEmpty() || hash.isEmpty() || password.size() != hash.size()) {
+            throw new IllegalArgument("One or more lists are empty or lengths mismatch");
+        }
+
         WorkerNode wn = WorkerNodePool.getAvailableWorker();
         List<Boolean> res;
         if (wn != null) {
             System.out.println("Found available worker " + wn);
-            res = wn.checkPassword(password, hash);
+            res = wn.assignCheckPassword(password, hash);
         } else {
             System.out.println("No worker available. Processing by FE...");
             res = checkPasswordCore(password, hash);
@@ -49,6 +61,11 @@ public class BcryptServiceHandler implements BcryptService.Iface {
     public void addBE(String BEhost, short BEport) throws IllegalArgument, TException {
         System.out.printf("Adding Backend Server: %s:%d\n", BEhost, BEport);
         WorkerNodePool.workers.put(new WorkerNode(BEhost, BEport), true);
+    }
+
+    @Override
+    public void pingBE() throws TException {
+
     }
 
     public List<String> hashPasswordCore(List<String> password, short logRounds) throws IllegalArgument, TException {
