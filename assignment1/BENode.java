@@ -3,8 +3,10 @@ import org.apache.log4j.Logger;
 import org.apache.thrift.TProcessorFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.server.THsHaServer;
 import org.apache.thrift.server.TSimpleServer;
 import org.apache.thrift.transport.TFramedTransport;
+import org.apache.thrift.transport.TNonblockingServerSocket;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
@@ -41,13 +43,13 @@ public class BENode {
         // launch Thrift server
         log.info("Launching BE node on port " + portBE);
         BcryptService.Processor processor = new BcryptService.Processor<BcryptService.Iface>(new BcryptServiceHandler());
-        TServerSocket socket = new TServerSocket(portBE);
-        TSimpleServer.Args sargs = new TSimpleServer.Args(socket);
+        TNonblockingServerSocket socket = new TNonblockingServerSocket(portBE);
+        THsHaServer.Args sargs = new THsHaServer.Args(socket);
         sargs.protocolFactory(new TBinaryProtocol.Factory());
         sargs.transportFactory(new TFramedTransport.Factory());
         sargs.processorFactory(new TProcessorFactory(processor));
         //sargs.maxWorkerThreads(64);
-        TSimpleServer server = new TSimpleServer(sargs);
+        THsHaServer server = new THsHaServer(sargs);
         server.serve();
     }
 

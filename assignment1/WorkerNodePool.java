@@ -4,22 +4,27 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WorkerNodePool {
-    // transport.open();
-    public static ConcurrentHashMap<WorkerNode, Boolean> workers = new ConcurrentHashMap<>();
+    // workers: <WorkNode, workload>
+    public static ConcurrentHashMap<WorkerNode, Integer> workers = new ConcurrentHashMap<>();
 
     public WorkerNodePool() {
     }
 
     public static WorkerNode getAvailableWorker() {
+        System.out.println("########################\n"+workers.keySet()+"\n########################");
+        WorkerNode slackNode = null;
         for (WorkerNode wn : workers.keySet()) {
-            if (workers.get(wn)) return wn;
+            if (slackNode == null || workers.get(wn) <= workers.get(slackNode)) {
+                slackNode = wn;
+            }
         }
-        return null;
+        return slackNode;
     }
 
 }
@@ -31,7 +36,6 @@ class WorkerNode {
     private TSocket sock;
     private TTransport tTransport;
     private TProtocol tProtocol;
-    private int workload;
 
     public WorkerNode(String host, short port) {
         this.host = host;
@@ -40,23 +44,65 @@ class WorkerNode {
         this.tTransport = new TFramedTransport(sock);
         this.tProtocol = new TBinaryProtocol(tTransport);
         this.clientToWorker = new BcryptService.Client(tProtocol);
-        this.workload = 0;
+    }
+
+    BcryptService.Client getNewClient() {
+//        return new BcryptService.Client(new TBinaryProtocol(new TFramedTransport(sock)));
+        return new BcryptService.Client(tProtocol);
     }
 
     List<String> assignHashPassword(List<String> password, short logRounds) throws TException {
-        if (!tTransport.isOpen())
-            tTransport.open();
-        List<String> res = clientToWorker.BEhashPassword(password, logRounds);
-        tTransport.close();
+        List<String> res = null;
+        try {
+            if (!tTransport.isOpen())
+                tTransport.open();
+            int load = password.size() * (int) Math.pow(2, logRounds);
+            WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
+            res = clientToWorker.BEhashPassword(password, logRounds);
+            WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
+        } catch (Exception e) {
+            if (e.getClass() == TTransportException.class) {
+                System.out.println(this + " died for hashPassword.");
+                e.getStackTrace();
+                WorkerNodePool.workers.remove(this);
+                res = null;
+            } else {
+                System.out.println("Other kinds of exception, need attention.");
+            }
+        } finally {
+            if (tTransport != null && tTransport.isOpen()) {
+                tTransport.close();
+            }
+        }
         return res;
     }
 
     List<Boolean> assignCheckPassword(List<String> password, List<String> hash) throws TException {
-        if (!tTransport.isOpen()) {
-            tTransport.open();
+
+        List<Boolean> res = null;
+        try {
+            if (!tTransport.isOpen())
+                tTransport.open();
+            int load = password.size();
+            WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
+            res = clientToWorker.BEcheckPassword(password, hash);
+            WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
+        } catch (Exception e) {
+            if (e.getClass() == TTransportException.class) {
+                System.out.println(this + " died for checkPassword.");
+                e.getStackTrace();
+                WorkerNodePool.workers.remove(this);
+                res = null;
+            } else if (e.getClass() == IllegalArgument.class)
+                System.out.println("Catch exception from checkPassword.");
+            else
+                System.out.println("Other kinds of exception, need attention.");
+
+        } finally {
+            if (tTransport != null && tTransport.isOpen()) {
+                tTransport.close();
+            }
         }
-        List<Boolean> res = clientToWorker.BEcheckPassword(password, hash);
-        tTransport.close();
         return res;
     }
 

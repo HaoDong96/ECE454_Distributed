@@ -18,12 +18,26 @@ public class BcryptServiceHandler implements BcryptService.Iface {
         WorkerNode wn = WorkerNodePool.getAvailableWorker();
         List<String> res;
         if (wn != null) {
-            System.out.println("Found available worker " + wn);
+            System.out.println("Found available worker for hashPassword " + wn);
             res = wn.assignHashPassword(password, logRounds);
-        } else {
-            System.out.println("No worker available. Processing by FE...");
-            res = hashPasswordCore(password, logRounds);
+            // keep getting available workers and try hashPassword until res is not null
+            while (res == null) {
+                System.out.println("Looking for another one...");
+                wn = WorkerNodePool.getAvailableWorker();
+                if (wn != null) {
+                    System.out.println("Found available worker " + wn);
+                    res = wn.assignHashPassword(password, logRounds);
+                }
+                // there is no available worker, jump out while and FEHashPassword
+                else
+                    break;
+            }
+            if (res != null)
+                return res;
         }
+        // if there is no worker nodes
+        System.out.println("No worker available. HashPassword by FE...");
+        res = hashPasswordCore(password, logRounds);
         return res;
     }
 
@@ -36,12 +50,26 @@ public class BcryptServiceHandler implements BcryptService.Iface {
         WorkerNode wn = WorkerNodePool.getAvailableWorker();
         List<Boolean> res;
         if (wn != null) {
-            System.out.println("Found available worker " + wn);
+            System.out.println("Found available worker for checkPassword " + wn);
             res = wn.assignCheckPassword(password, hash);
-        } else {
-            System.out.println("No worker available. Processing by FE...");
-            res = checkPasswordCore(password, hash);
+            // keep getting available workers and try checkPassword until res is not null
+            while (res == null) {
+                System.out.println("worker " + wn + " died, Looking for another one...");
+                wn = WorkerNodePool.getAvailableWorker();
+                if (wn != null) {
+                    System.out.println("Found available worker " + wn);
+                    res = wn.assignCheckPassword(password, hash);
+                }
+                // there is no available worker, jump out while and FEHashPassword
+                else
+                    break;
+            }
+            if (res != null)
+                return res;
         }
+        // if there is no worker nodes
+        System.out.println("No worker available. CheckPassword by FE...");
+        res = checkPasswordCore(password, hash);
         return res;
     }
 
@@ -60,7 +88,7 @@ public class BcryptServiceHandler implements BcryptService.Iface {
     @Override
     public void addBE(String BEhost, short BEport) throws IllegalArgument, TException {
         System.out.printf("Adding Backend Server: %s:%d\n", BEhost, BEport);
-        WorkerNodePool.workers.put(new WorkerNode(BEhost, BEport), true);
+        WorkerNodePool.workers.put(new WorkerNode(BEhost, BEport), 0);
     }
 
     @Override

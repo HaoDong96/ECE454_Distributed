@@ -25,7 +25,19 @@ public class Client {
             List<String> password = new ArrayList<>();
             password.add("1balabala");
             password.add("2balabala");
-            List<String> hash = client.hashPassword(password, (short) 10);
+            password.add("2balabala");
+            password.add("2balabala");
+            password.add("2balabala");
+            password.add("2balabala");
+            password.add("2balabala");
+            password.add("2balabala");
+            password.add("2balabala");
+            List<String> hash = client.hashPassword(password, (short) 11);
+            hash = client.hashPassword(password, (short) 11);
+            hash = client.hashPassword(password, (short) 11);
+            hash = client.hashPassword(password, (short) 11);
+            hash = client.hashPassword(password, (short) 11);
+
 
             for (int i = 0; i < password.size(); i++) {
                 System.out.println("Password: " + password.get(i));
