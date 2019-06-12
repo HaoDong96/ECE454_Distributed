@@ -27,17 +27,19 @@ public class BENode {
 
         String hostFE = args[0];
         int portFE = Integer.parseInt(args[1]);
-        int portBE = Integer.parseInt(args[2]);
+        short portBE = Short.parseShort(args[2]);
         log.info("Launching BE node on port " + portBE + " at host " + getHostName());
 
         // Connect to FE
-        TSocket sock = new TSocket(args[0], Integer.parseInt(args[1]));
+        TSocket sock = new TSocket(hostFE, portFE);
         TTransport transport = new TFramedTransport(sock);
         TProtocol protocol = new TBinaryProtocol(transport);
         BcryptService.Client client = new BcryptService.Client(protocol);
         transport.open();
+        client.addBE(getHostName(), portBE);
 
         // launch Thrift server
+        log.info("Launching BE node on port " + portBE);
         BcryptService.Processor processor = new BcryptService.Processor<BcryptService.Iface>(new BcryptServiceHandler());
         TServerSocket socket = new TServerSocket(portBE);
         TSimpleServer.Args sargs = new TSimpleServer.Args(socket);
