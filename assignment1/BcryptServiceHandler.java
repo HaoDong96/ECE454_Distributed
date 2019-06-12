@@ -42,7 +42,7 @@ public class BcryptServiceHandler implements BcryptService.Iface {
     @Override
     public List<Boolean> BEcheckPassword(List<String> password, List<String> hash) throws IllegalArgument, TException {
         System.out.println("Finished a checking job. Returning result.");
-        return checkPassword(password, hash);
+        return checkPasswordCore(password, hash);
     }
 
     @Override
