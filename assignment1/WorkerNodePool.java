@@ -6,6 +6,7 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -18,24 +19,34 @@ public class WorkerNodePool {
     public WorkerNodePool() {
     }
 
-    public static  HashMap<WorkerNode, int[]> distributeLoad(int totalLoad) {
+    public static HashMap<WorkerNode, int[]> distributeLoad(int totalLoad) {
         HashMap<WorkerNode, int[]> res = new HashMap<>();
+        if (workers.size() == 0) { // No worker available, return empty distribution map
+            return res;
+        } else if (workers.size() == 1) {
+            res.put(workers.keySet().iterator().next(), new int[] {0, totalLoad - 1}); // Only one worker available, assign all work to it
+        }
+
         HashMap<WorkerNode, Integer> workload = new HashMap<>();
         int loadToDistribute = totalLoad;
-        int numOfWorkers = workers.size();
 
         for (WorkerNode wn : workers.keySet()) {
-            int assignedLoad = totalLoad / numOfWorkers;
-            workload.put(wn, assignedLoad);
-            loadToDistribute -= assignedLoad;
+            workload.put(wn, 0);
         }
 
-        for (WorkerNode wn : workers.keySet()) {
-            if (loadToDistribute == 0) break;
-            workload.put(wn, workload.get(wn) + 1);
-            loadToDistribute--;
+        int minLoad = Collections.min(workers.values());
+
+        while (loadToDistribute > 0) {
+            for (WorkerNode wn : workload.keySet()) {
+                if (workload.get(wn) + workers.get(wn) <= minLoad) {
+                    minLoad = workload.get(wn) + workers.get(wn) + 1;
+                    workload.put(wn, workload.get(wn) + 1);
+                    loadToDistribute--;
+                }
+            }
         }
 
+        System.out.println(workload);
 
         int i = 0;
         for (WorkerNode wn : workers.keySet()) {
