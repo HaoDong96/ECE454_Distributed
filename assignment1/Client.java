@@ -22,21 +22,13 @@ public class Client {
             BcryptService.Client client = new BcryptService.Client(protocol);
             transport.open();
 
+            long init_time = System.currentTimeMillis();
             List<String> password = new ArrayList<>();
-            password.add("1balabala");
-            password.add("2balabala");
-            password.add("2balabala");
-            password.add("2balabala");
-            password.add("2balabala");
-            password.add("2balabala");
-            password.add("2balabala");
-            password.add("2balabala");
-            password.add("2balabala");
-
-            List<String> hash = client.hashPassword(password, (short) 13);
-
-
-
+            for(int i = 0; i < 100; i ++)
+                password.add("faldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurewqodfnmdsalkfjdsalkfjaslkfajflasdjfadslfkajdflkjfdalkadfjlkdfjfadsflkjafaldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurewqodfnmdsalkfjdsalkfjaslkfajflasdjfadslfkajdflkjfdalkadfjlkdfjfadsflkjafaldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurewqodfnmdsalkfjdsalkfjaslkfajflasdjfadslfkajdflkjfdalkadfjlkdfjfadsflkjafaldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurewqodfnmdsalkfjdsalkfjaslkfajflasdjfadslfkajdflkjfdalkadfjlkdfjfadsflkjafaldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurewqodfnmdsalkfjdsalkfjaslkfajflasdjfadslfkajdflkjfdalkadfjlkdfjfadsflkjafaldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurewqodfnmdsalkfjdsalkfjaslkfajflasdjfadslfkajdflkjfdalkadfjlkdfjfadsflkjafaldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurewqodfnmdsalkfjdsalkfjaslkfajflasdjfadslfkajdflkjfdalkadfjlkdfjfadsflkjafaldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurewqodfnmdsalkfjdsalkfjaslkfajflasdjfadslfkajdflkjfdalkadfjlkdfjfadsflkjafaldskfjalkdsjfalkfdjasfoeiurqoeueoirqueroqiewurvcvmvcmdoiZZ");
+            List<String> hash = client.hashPassword(password, (short) 10);
+            long after_hash_time = System.currentTimeMillis();
+            System.out.println(after_hash_time-init_time);
 
             for (int i = 0; i < password.size(); i++) {
                 System.out.println("Password: " + password.get(i));
@@ -60,9 +52,10 @@ public class Client {
         }
     }
     public static void main(String[] args) {
-        for (int i = 0; i < 10; i++) {
-            Thread t = new Thread(() -> work(args));
-            t.start();
+        for (int i = 0; i < 1; i++) {
+            work(args);
+//            Thread t = new Thread(() -> work(args));
+//            t.start();
         }
     }
 }
