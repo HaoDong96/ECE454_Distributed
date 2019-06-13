@@ -19,7 +19,7 @@ public class WorkerNodePool {
     public WorkerNodePool() {
     }
 
-    public static HashMap<WorkerNode, int[]> distributeLoad(int totalLoad) {
+    public synchronized static HashMap<WorkerNode, int[]> distributeLoad(int totalLoad) {
         HashMap<WorkerNode, int[]> res = new HashMap<>();
         if (workers.size() == 0) { // No worker available, return empty distribution map
             return res;
@@ -34,19 +34,23 @@ public class WorkerNodePool {
             workload.put(wn, 0);
         }
 
-        int minLoad = Collections.min(workers.values());
+
 
         while (loadToDistribute > 0) {
+            int minLoad = Integer.MAX_VALUE;
+            WorkerNode minLoad_wn = null;
             for (WorkerNode wn : workload.keySet()) {
-                if (workload.get(wn) + workers.get(wn) <= minLoad) {
-                    minLoad = workload.get(wn) + workers.get(wn) + 1;
-                    workload.put(wn, workload.get(wn) + 1);
-                    loadToDistribute--;
+                if (workload.get(wn) + workers.get(wn) < minLoad) {
+                    minLoad = workload.get(wn) + workers.get(wn);
+                    minLoad_wn = wn;
                 }
             }
+            workload.put(minLoad_wn, workload.get(minLoad_wn) + 1);
+            loadToDistribute--;
         }
 
-        System.out.println(workload);
+        System.out.println("Assigned workload: "+workload);
+        System.out.println("Current total workload" + WorkerNodePool.workers);
 
         int i = 0;
         for (WorkerNode wn : workers.keySet()) {
@@ -169,7 +173,7 @@ class WorkerNode {
 
     @Override
     public String toString() {
-        return host + ":" + port;
+        return ""+port;
     }
 
     @Override
