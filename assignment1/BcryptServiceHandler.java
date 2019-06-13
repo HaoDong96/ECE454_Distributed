@@ -1,10 +1,12 @@
 import org.apache.thrift.TException;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.awt.SystemTray;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BcryptServiceHandler implements BcryptService.Iface {
     @Override
@@ -20,6 +22,9 @@ public class BcryptServiceHandler implements BcryptService.Iface {
         String[] res = new String[password.size()];
 
         HashMap<WorkerNode, int[]> loads = WorkerNodePool.distributeLoad(password.size());
+        for (WorkerNode e : loads.keySet()) {
+            System.out.println("" + e + "---[" + loads.get(e)[0] + "," + loads.get(e)[1] + "]");
+        }
 
         // If no BE node at all
         if (loads.isEmpty()) {
@@ -55,30 +60,39 @@ public class BcryptServiceHandler implements BcryptService.Iface {
             throw new IllegalArgument("One or more lists are empty or lengths mismatch");
         }
 
-        WorkerNode wn = WorkerNodePool.getAvailableWorker();
-        List<Boolean> res;
-        if (wn != null) {
-            System.out.println("Found available worker for checkPassword " + wn);
-            res = wn.assignCheckPassword(password, hash);
-            // keep getting available workers and try checkPassword until res is not null
-            while (res == null) {
-                System.out.println("worker " + wn + " died, Looking for another one...");
-                wn = WorkerNodePool.getAvailableWorker();
-                if (wn != null) {
-                    System.out.println("Found available worker " + wn);
-                    res = wn.assignCheckPassword(password, hash);
-                }
-                // there is no available worker, jump out while and FEHashPassword
-                else
-                    break;
-            }
-            if (res != null)
-                return res;
+        Boolean[] res = new Boolean[password.size()];
+
+        HashMap<WorkerNode, int[]> loads = WorkerNodePool.distributeLoad(password.size());
+        for (WorkerNode e : loads.keySet()) {
+            System.out.println("" + e + "---[" + loads.get(e)[0] + "," + loads.get(e)[1] + "]");
         }
-        // if there is no worker nodes
-        System.out.println("No worker available. CheckPassword by FE...");
-        res = checkPasswordCore(password, hash);
-        return res;
+
+        // If no BE node at all
+        if (loads.isEmpty()) {
+            System.out.println("No worker available. Checking by FE...");
+            return checkPasswordCore(password, hash);
+        }
+
+        // If some BE nodes exist
+        for (WorkerNode wn : loads.keySet()) {
+            System.out.println("Found available worker for Checking " + wn);
+            if (wn != null) {
+                int start = loads.get(wn)[0];
+                int end = loads.get(wn)[1];
+                List<Boolean> r = wn.assignCheckPassword(password.subList(start, end + 1), hash.subList(start, end + 1));
+
+                // If node is down, perform calculation by FE
+                if (r == null)
+                    r = checkPasswordCore(password.subList(start, end + 1), hash.subList(start, end + 1));
+
+                // Store partial result into the global result array
+                for (int i = start; i <= end; i++) {
+                    res[i] = r.get(i - start);
+                }
+            }
+        }
+
+        return Arrays.asList(res);
     }
 
     @Override

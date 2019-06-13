@@ -18,17 +18,14 @@ public class WorkerNodePool {
     public WorkerNodePool() {
     }
 
-    public static HashMap<WorkerNode, int[]> distributeLoad(int totalLoad) {
+    public static  HashMap<WorkerNode, int[]> distributeLoad(int totalLoad) {
         HashMap<WorkerNode, int[]> res = new HashMap<>();
         HashMap<WorkerNode, Integer> workload = new HashMap<>();
         int loadToDistribute = totalLoad;
-        int currentLoadOverall = 0;
-        for (int l : workers.values())
-            currentLoadOverall += l;
         int numOfWorkers = workers.size();
 
         for (WorkerNode wn : workers.keySet()) {
-            int assignedLoad = (int) (currentLoadOverall + totalLoad) / numOfWorkers - workers.get(wn);
+            int assignedLoad = totalLoad / numOfWorkers;
             workload.put(wn, assignedLoad);
             loadToDistribute -= assignedLoad;
         }
@@ -38,6 +35,7 @@ public class WorkerNodePool {
             workload.put(wn, workload.get(wn) + 1);
             loadToDistribute--;
         }
+
 
         int i = 0;
         for (WorkerNode wn : workers.keySet()) {
@@ -100,14 +98,14 @@ class WorkerNode {
         return new JobConnection();
     }
 
-    List<String> assignHashPassword(List<String> password, short logRounds) throws TException {
+     List<String> assignHashPassword(List<String> password, short logRounds) throws TException {
         JobConnection jobConnection = getNewConnection();
         TTransport tTransport = jobConnection.getTransport();
         List<String> res = null;
         try {
             if (!tTransport.isOpen())
                 tTransport.open();
-            int load = password.size() * (int) Math.pow(2, logRounds);
+            int load = password.size();
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
             res = jobConnection.getClientToWorker().BEhashPassword(password, logRounds);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
@@ -135,7 +133,7 @@ class WorkerNode {
         try {
             if (!tTransport.isOpen())
                 tTransport.open();
-            int load = password.size() * (int) Math.pow(2, 10);
+            int load = password.size();
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
             res = jobConnection.getClientToWorker().BEcheckPassword(password, hash);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Client {
-    public static void main(String[] args) {
+    static void work(String... args) {
         if (args.length != 3) {
             System.err.println("Usage: java Client FE_host FE_port password");
             System.exit(-1);
@@ -32,34 +32,9 @@ public class Client {
             password.add("2balabala");
             password.add("2balabala");
             password.add("2balabala");
-            List<String> hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
-            hash = client.hashPassword(password, (short) 10);
+
+            List<String> hash = client.hashPassword(password, (short) 13);
+
 
 
 
@@ -82,6 +57,12 @@ public class Client {
             transport.close();
         } catch (TException x) {
             x.printStackTrace();
+        }
+    }
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            Thread t = new Thread(() -> work(args));
+            t.start();
         }
     }
 }
