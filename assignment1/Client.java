@@ -67,7 +67,7 @@ public class Client {
                 System.out.println("Password: " + password.get(i));
                 System.out.println("Hash: " + hash.get(i));
             }
-            System.out.println("Positive check: " + client.checkPassword(password, hash));
+//            System.out.println("Positive check: " + client.checkPassword(password, hash));
 
 //            hash.set(0, "$2a$14$reBHJvwbb0UWqJHLyPTVF.6Ld5sFRirZx/bXMeMmeurJledKYdZmG");
 //            System.out.println("Negative check: " + client.checkPassword(password, hash));

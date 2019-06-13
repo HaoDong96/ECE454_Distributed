@@ -2,6 +2,8 @@ import org.apache.thrift.TException;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class BcryptServiceHandler implements BcryptService.Iface {
@@ -15,30 +17,36 @@ public class BcryptServiceHandler implements BcryptService.Iface {
             throw new IllegalArgument("Illegal logRound argument. BCrypt supports rounds between 4 and 30 (inclusive).");
         }
 
-        WorkerNode wn = WorkerNodePool.getAvailableWorker();
-        List<String> res;
-        if (wn != null) {
-            System.out.println("Found available worker for hashPassword " + wn);
-            res = wn.assignHashPassword(password, logRounds);
-            // keep getting available workers and try hashPassword until res is not null
-            while (res == null) {
-                System.out.println("Looking for another one...");
-                wn = WorkerNodePool.getAvailableWorker();
-                if (wn != null) {
-                    System.out.println("Found available worker " + wn);
-                    res = wn.assignHashPassword(password, logRounds);
-                }
-                // there is no available worker, jump out while and FEHashPassword
-                else
-                    break;
-            }
-            if (res != null)
-                return res;
+        String[] res = new String[password.size()];
+
+        HashMap<WorkerNode, int[]> loads = WorkerNodePool.distributeLoad(password.size());
+
+        // If no BE node at all
+        if (loads.isEmpty()) {
+            System.out.println("No worker available. HashPassword by FE...");
+            return hashPasswordCore(password, logRounds);
         }
-        // if there is no worker nodes
-        System.out.println("No worker available. HashPassword by FE...");
-        res = hashPasswordCore(password, logRounds);
-        return res;
+
+        // If some BE nodes exist
+        for (WorkerNode wn : loads.keySet()) {
+            System.out.println("Found available worker for hashPassword " + wn);
+            if (wn != null) {
+                int start = loads.get(wn)[0];
+                int end = loads.get(wn)[1];
+                List<String> r = wn.assignHashPassword(password.subList(start, end + 1), logRounds);
+
+                // If node is down, perform calculation by FE
+                if (r == null)
+                    r = hashPasswordCore(password.subList(start, end + 1), logRounds);
+
+                // Store partial result into the global result array
+                for (int i = start; i <= end; i++) {
+                    res[i] = r.get(i - start);
+                }
+            }
+        }
+
+        return Arrays.asList(res);
     }
 
     @Override

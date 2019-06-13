@@ -6,6 +6,8 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,6 +16,37 @@ public class WorkerNodePool {
     public static ConcurrentHashMap<WorkerNode, Integer> workers = new ConcurrentHashMap<>();
 
     public WorkerNodePool() {
+    }
+
+    public static HashMap<WorkerNode, int[]> distributeLoad(int totalLoad) {
+        HashMap<WorkerNode, int[]> res = new HashMap<>();
+        HashMap<WorkerNode, Integer> workload = new HashMap<>();
+        int loadToDistribute = totalLoad;
+        int currentLoadOverall = 0;
+        for (int l : workers.values())
+            currentLoadOverall += l;
+        int numOfWorkers = workers.size();
+
+        for (WorkerNode wn : workers.keySet()) {
+            int assignedLoad = (int) (currentLoadOverall + totalLoad) / numOfWorkers - workers.get(wn);
+            workload.put(wn, assignedLoad);
+            loadToDistribute -= assignedLoad;
+        }
+
+        for (WorkerNode wn : workers.keySet()) {
+            if (loadToDistribute == 0) break;
+            workload.put(wn, workload.get(wn) + 1);
+            loadToDistribute--;
+        }
+
+        int i = 0;
+        for (WorkerNode wn : workers.keySet()) {
+            res.put(wn, new int[] {i, i + workload.get(wn) - 1});
+            i = i + workload.get(wn);
+        }
+
+        assert i == totalLoad - 1;
+        return res;
     }
 
     public static WorkerNode getAvailableWorker() {
@@ -34,17 +67,19 @@ class WorkerNode {
     private String host;
     private short port;
 
-    class Connection {
+    class JobConnection {
         private BcryptService.Client clientToWorker;
         private TSocket sock;
         private TTransport transport;
         private TProtocol protocol;
 
-        public Connection() {
+        public JobConnection() {
             sock = new TSocket(host, port);
             transport = new TFramedTransport(sock);
             protocol = new TBinaryProtocol(transport);
             clientToWorker = new BcryptService.Client(protocol);
+            int start;
+            int end;
         }
 
         public BcryptService.Client getClientToWorker() {
@@ -61,21 +96,20 @@ class WorkerNode {
         this.port = port;
     }
 
-    WorkerNode.Connection getNewConnection() {
-//        return new BcryptService.Client(new TBinaryProtocol(new TFramedTransport(sock)));
-        return new Connection();
+    JobConnection getNewConnection() {
+        return new JobConnection();
     }
 
     List<String> assignHashPassword(List<String> password, short logRounds) throws TException {
-        WorkerNode.Connection connection = getNewConnection();
-        TTransport tTransport = connection.getTransport();
+        JobConnection jobConnection = getNewConnection();
+        TTransport tTransport = jobConnection.getTransport();
         List<String> res = null;
         try {
             if (!tTransport.isOpen())
                 tTransport.open();
             int load = password.size() * (int) Math.pow(2, logRounds);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
-            res = connection.getClientToWorker().BEhashPassword(password, logRounds);
+            res = jobConnection.getClientToWorker().BEhashPassword(password, logRounds);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
         } catch (Exception e) {
             if (e.getClass() == TTransportException.class) {
@@ -84,7 +118,7 @@ class WorkerNode {
                 WorkerNodePool.workers.remove(this);
                 res = null;
             } else {
-                System.out.println("Other kinds of exception, need attention.");
+                e.printStackTrace();
             }
         } finally {
             if (tTransport != null && tTransport.isOpen()) {
@@ -95,15 +129,15 @@ class WorkerNode {
     }
 
     List<Boolean> assignCheckPassword(List<String> password, List<String> hash) throws TException {
-        WorkerNode.Connection connection = getNewConnection();
-        TTransport tTransport = connection.getTransport();
+        JobConnection jobConnection = getNewConnection();
+        TTransport tTransport = jobConnection.getTransport();
         List<Boolean> res = null;
         try {
             if (!tTransport.isOpen())
                 tTransport.open();
             int load = password.size() * (int) Math.pow(2, 10);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
-            res = connection.getClientToWorker().BEcheckPassword(password, hash);
+            res = jobConnection.getClientToWorker().BEcheckPassword(password, hash);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
         } catch (Exception e) {
             if (e.getClass() == TTransportException.class) {
@@ -114,7 +148,7 @@ class WorkerNode {
             } else if (e.getClass() == IllegalArgument.class)
                 System.out.println("Catch exception from checkPassword.");
             else
-                System.out.println("Other kinds of exception, need attention.");
+                e.printStackTrace();
 
         } finally {
             if (tTransport != null && tTransport.isOpen()) {
