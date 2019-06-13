@@ -17,13 +17,14 @@ public class WorkerNodePool {
     }
 
     public static WorkerNode getAvailableWorker() {
-        System.out.println("########################\n"+workers.keySet()+"\n########################");
         WorkerNode slackNode = null;
         for (WorkerNode wn : workers.keySet()) {
             if (slackNode == null || workers.get(wn) <= workers.get(slackNode)) {
                 slackNode = wn;
             }
         }
+//        System.out.println(WorkerNodePool.workers);
+//        System.out.println("Returned node: " + slackNode);
         return slackNode;
     }
 
@@ -32,33 +33,49 @@ public class WorkerNodePool {
 class WorkerNode {
     private String host;
     private short port;
-    private BcryptService.Client clientToWorker;
-    private TSocket sock;
-    private TTransport tTransport;
-    private TProtocol tProtocol;
+
+    class Connection {
+        private BcryptService.Client clientToWorker;
+        private TSocket sock;
+        private TTransport transport;
+        private TProtocol protocol;
+
+        public Connection() {
+            sock = new TSocket(host, port);
+            transport = new TFramedTransport(sock);
+            protocol = new TBinaryProtocol(transport);
+            clientToWorker = new BcryptService.Client(protocol);
+        }
+
+        public BcryptService.Client getClientToWorker() {
+            return clientToWorker;
+        }
+
+        public TTransport getTransport() {
+            return transport;
+        }
+    }
 
     public WorkerNode(String host, short port) {
         this.host = host;
         this.port = port;
-        this.sock = new TSocket(host, port);
-        this.tTransport = new TFramedTransport(sock);
-        this.tProtocol = new TBinaryProtocol(tTransport);
-        this.clientToWorker = new BcryptService.Client(tProtocol);
     }
 
-    BcryptService.Client getNewClient() {
+    WorkerNode.Connection getNewConnection() {
 //        return new BcryptService.Client(new TBinaryProtocol(new TFramedTransport(sock)));
-        return new BcryptService.Client(tProtocol);
+        return new Connection();
     }
 
     List<String> assignHashPassword(List<String> password, short logRounds) throws TException {
+        WorkerNode.Connection connection = getNewConnection();
+        TTransport tTransport = connection.getTransport();
         List<String> res = null;
         try {
             if (!tTransport.isOpen())
                 tTransport.open();
             int load = password.size() * (int) Math.pow(2, logRounds);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
-            res = clientToWorker.BEhashPassword(password, logRounds);
+            res = connection.getClientToWorker().BEhashPassword(password, logRounds);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
         } catch (Exception e) {
             if (e.getClass() == TTransportException.class) {
@@ -78,14 +95,15 @@ class WorkerNode {
     }
 
     List<Boolean> assignCheckPassword(List<String> password, List<String> hash) throws TException {
-
+        WorkerNode.Connection connection = getNewConnection();
+        TTransport tTransport = connection.getTransport();
         List<Boolean> res = null;
         try {
             if (!tTransport.isOpen())
                 tTransport.open();
-            int load = password.size();
+            int load = password.size() * (int) Math.pow(2, 10);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
-            res = clientToWorker.BEcheckPassword(password, hash);
+            res = connection.getClientToWorker().BEcheckPassword(password, hash);
             WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
         } catch (Exception e) {
             if (e.getClass() == TTransportException.class) {
