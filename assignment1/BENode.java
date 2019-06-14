@@ -12,6 +12,7 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
 import java.net.InetAddress;
+import java.util.concurrent.TimeUnit;
 
 
 public class BENode {
@@ -32,13 +33,23 @@ public class BENode {
         short portBE = Short.parseShort(args[2]);
         log.info("Launching BE node on port " + portBE + " at host " + getHostName());
 
-        // Connect to FE
-        TSocket sock = new TSocket(hostFE, portFE);
-        TTransport transport = new TFramedTransport(sock);
-        TProtocol protocol = new TBinaryProtocol(transport);
-        BcryptService.Client client = new BcryptService.Client(protocol);
-        transport.open();
-        client.addBE(getHostName(), portBE);
+        boolean connectedFlag = false;
+        while (!connectedFlag) {
+            try {
+                // Connect to FE
+                TSocket sock = new TSocket(hostFE, portFE);
+                TTransport transport = new TFramedTransport(sock);
+                TProtocol protocol = new TBinaryProtocol(transport);
+                BcryptService.Client client = new BcryptService.Client(protocol);
+                transport.open();
+                client.addBE(getHostName(), portBE);
+                System.out.println("FENode " + hostFE + ":" + portFE + " connected.");
+                connectedFlag = true;
+            } catch (Exception e) {
+                System.out.println("FENode connection failed. Retry in 100ms.");
+                TimeUnit.MILLISECONDS.sleep(100);
+            }
+        }
 
         // launch Thrift server
         log.info("Launching BE node on port " + portBE);
