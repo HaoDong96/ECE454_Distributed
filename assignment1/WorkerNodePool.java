@@ -37,20 +37,16 @@ public class WorkerNodePool {
 
 
         while (loadToDistribute > 0) {
-//            int minLoad = Integer.MAX_VALUE;
-//            WorkerNode minLoad_wn = null;
+            int minLoad = Integer.MAX_VALUE;
+            WorkerNode minLoad_wn = null;
             for (WorkerNode wn : workload.keySet()) {
-//                if (workload.get(wn) + workers.get(wn) < minLoad) {
-//                    minLoad = workload.get(wn) + workers.get(wn);
-//                    minLoad_wn = wn;
-//                }
-                workload.put(wn, workload.get(wn) + 1);
-                loadToDistribute--;
-                if (loadToDistribute == 0)
-                    break;
+                if (workload.get(wn) + workers.get(wn) < minLoad) {
+                    minLoad = workload.get(wn) + workers.get(wn);
+                    minLoad_wn = wn;
+                }
             }
-//            workload.put(minLoad_wn, workload.get(minLoad_wn) + 1);
-//            loadToDistribute--;
+            workload.put(minLoad_wn, workload.get(minLoad_wn) + 1);
+            loadToDistribute--;
         }
 
         System.out.println("Assigned workload: "+workload);
