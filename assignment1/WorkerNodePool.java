@@ -79,6 +79,7 @@ public class WorkerNodePool {
 class WorkerNode {
     private String host;
     private short port;
+    public static final WorkerNode FEWORKERNODE = new WorkerNode("FE_HOST_FLAG", (short)0);
 
     class JobConnection {
         private BcryptService.Client clientToWorker;
@@ -114,9 +115,20 @@ class WorkerNode {
     }
 
      List<String> assignHashPassword(List<String> password, short logRounds) throws TException {
+        List<String> res = null;
+
+        if(this == FEWORKERNODE){
+            System.out.println("FE: Finished a hashing job. Returning result.");
+            int load = password.size();
+            WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
+            res = BcryptServiceHandler.hashPasswordCore(password, logRounds);
+            WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
+            return res;
+        }
+
         JobConnection jobConnection = getNewConnection();
         TTransport tTransport = jobConnection.getTransport();
-        List<String> res = null;
+
         try {
             if (!tTransport.isOpen())
                 tTransport.open();

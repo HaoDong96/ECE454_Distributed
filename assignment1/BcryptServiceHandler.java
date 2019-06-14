@@ -41,8 +41,10 @@ public class BcryptServiceHandler implements BcryptService.Iface {
                 List<String> r = wn.assignHashPassword(password.subList(start, end + 1), logRounds);
 
                 // If node is down, perform calculation by FE
-                if (r == null)
+                if (r == null) {
+                    System.out.println("FE: Finished a hashing job. Returning result.");
                     r = hashPasswordCore(password.subList(start, end + 1), logRounds);
+                }
 
                 // Store partial result into the global result array
                 for (int i = start; i <= end; i++) {
@@ -118,7 +120,7 @@ public class BcryptServiceHandler implements BcryptService.Iface {
 
     }
 
-    public List<String> hashPasswordCore(List<String> password, short logRounds) throws IllegalArgument, TException {
+    public static List<String> hashPasswordCore(List<String> password, short logRounds) throws IllegalArgument, TException {
         try {
             List<String> ret = new ArrayList<>();
             for (String passwd : password) {
@@ -131,7 +133,7 @@ public class BcryptServiceHandler implements BcryptService.Iface {
         }
     }
 
-    public List<Boolean> checkPasswordCore(List<String> password, List<String> hash) throws IllegalArgument, TException {
+    public static List<Boolean> checkPasswordCore(List<String> password, List<String> hash) throws IllegalArgument, TException {
         try {
             if (password.size() != hash.size())
                 throw new IllegalArgument();
