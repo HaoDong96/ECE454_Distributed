@@ -1,19 +1,15 @@
 import org.apache.thrift.TException;
 import org.mindrot.jbcrypt.BCrypt;
 
-import java.awt.SystemTray;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import sun.text.resources.cldr.ru.FormatData_ru_UA;
 
 public class BcryptServiceHandler implements BcryptService.Iface {
     ExecutorService pool = Executors.newFixedThreadPool(4);
@@ -51,7 +47,7 @@ public class BcryptServiceHandler implements BcryptService.Iface {
                 int start = loads.get(wn)[0];
                 int end = loads.get(wn)[1];
                 results.add(pool.submit(() -> wn.assignHashPassword(password.subList(start, end + 1), logRounds)));
-                positions.add(new int[] {start, end});
+                positions.add(new int[]{start, end});
             }
         }
 
@@ -96,26 +92,44 @@ public class BcryptServiceHandler implements BcryptService.Iface {
 
         // If no BE node at all
         if (loads.isEmpty()) {
-            System.out.println("No worker available. Checking by FE...");
+            System.out.println("No worker available. HashPassword by FE...");
             return checkPasswordCore(password, hash);
         }
 
+        List<Future<List<Boolean>>> results = new LinkedList<>();
+        List<int[]> positions = new LinkedList<>();
+
         // If some BE nodes exist
         for (WorkerNode wn : loads.keySet()) {
-            System.out.println("Found available worker for Checking " + wn);
+            System.out.println("Found available worker for hashPassword " + wn);
             if (wn != null) {
                 int start = loads.get(wn)[0];
                 int end = loads.get(wn)[1];
-                List<Boolean> r = wn.assignCheckPassword(password.subList(start, end + 1), hash.subList(start, end + 1));
+                results.add(pool.submit(() -> wn.assignCheckPassword(password.subList(start, end + 1), hash.subList(start, end + 1))));
+                positions.add(new int[]{start, end});
+            }
+        }
 
-                // If node is down, perform calculation by FE
-                if (r == null)
-                    r = checkPasswordCore(password.subList(start, end + 1), hash.subList(start, end + 1));
+        for (int ii = 0; ii < results.size(); ii++) {
+            List<Boolean> r;
+            int start = positions.get(ii)[0];
+            int end = positions.get(ii)[1];
 
-                // Store partial result into the global result array
-                for (int i = start; i <= end; i++) {
-                    res[i] = r.get(i - start);
-                }
+            try {
+                r = results.get(ii).get();
+            } catch (InterruptedException | ExecutionException e) {
+                r = checkPasswordCore(password.subList(start, end + 1), hash.subList(start, end + 1));
+            }
+
+            // If node is down, perform calculation by FE
+            if (r == null) {
+                System.out.println("FE: Finished a hashing job. Returning result.");
+                r = checkPasswordCore(password.subList(start, end + 1), hash.subList(start, end + 1));
+            }
+
+            // Store partial result into the global result array
+            for (int i = start; i <= end; i++) {
+                res[i] = r.get(i - start);
             }
         }
 
@@ -158,17 +172,15 @@ public class BcryptServiceHandler implements BcryptService.Iface {
         }
     }
 
-    public static List<Boolean> checkPasswordCore(List<String> password, List<String> hash) throws IllegalArgument, TException {
-        try {
-            if (password.size() != hash.size())
-                throw new IllegalArgument();
-            List<Boolean> ret = new ArrayList<>();
-            for (int i = 0; i < password.size(); i++) {
+    public static List<Boolean> checkPasswordCore(List<String> password, List<String> hash) {
+        List<Boolean> ret = new ArrayList<>();
+        for (int i = 0; i < password.size(); i++) {
+            try {
                 ret.add(BCrypt.checkpw(password.get(i), hash.get(i)));
+            } catch (Exception e) {
+                ret.add(false);
             }
-            return ret;
-        } catch (Exception e) {
-            throw new IllegalArgument(e.getMessage());
         }
+        return ret;
     }
 }

@@ -154,9 +154,20 @@ class WorkerNode {
     }
 
     List<Boolean> assignCheckPassword(List<String> password, List<String> hash) throws TException {
+        List<Boolean> res = null;
+
+        if(this == FEWORKERNODE){
+            System.out.println("FE: Finished a Checking job. Returning result.");
+            int load = password.size();
+            WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) + load);
+            res = BcryptServiceHandler.checkPasswordCore(password, hash);
+            WorkerNodePool.workers.put(this, WorkerNodePool.workers.get(this) - load);
+            return res;
+        }
+
         JobConnection jobConnection = getNewConnection();
         TTransport tTransport = jobConnection.getTransport();
-        List<Boolean> res = null;
+
         try {
             if (!tTransport.isOpen())
                 tTransport.open();
@@ -170,11 +181,9 @@ class WorkerNode {
                 e.getStackTrace();
                 WorkerNodePool.workers.remove(this);
                 res = null;
-            } else if (e.getClass() == IllegalArgument.class)
-                System.out.println("Catch exception from checkPassword.");
-            else
+            } else {
                 e.printStackTrace();
-
+            }
         } finally {
             if (tTransport != null && tTransport.isOpen()) {
                 tTransport.close();
