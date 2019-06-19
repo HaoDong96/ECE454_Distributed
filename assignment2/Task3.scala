@@ -8,8 +8,13 @@ object Task3 {
 
     val textFile = sc.textFile(args(0))
 
-    // modify this code
-    val output = textFile.map(x => x);
+    val output = textFile
+      .flatMap(line => {
+        val rates = line.split(",").drop(1)
+        (for {i <- rates.indices} yield (i + 1, if (rates(i) == "") 0 else 1)).toList
+      })
+      .reduceByKey(_ + _)
+      .map(e => e._1 + "," + e._2)
     
     output.saveAsTextFile(args(1))
   }

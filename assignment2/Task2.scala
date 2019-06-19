@@ -1,4 +1,4 @@
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{SparkConf, SparkContext}
 
 // please don't change the object name
 object Task2 {
@@ -8,9 +8,13 @@ object Task2 {
 
     val textFile = sc.textFile(args(0))
 
-    // modify this code
-    val output = textFile.map(x => x);
-    
-    output.saveAsTextFile(args(1))
+    val output = textFile
+      .map(line => {
+        val tokens = line.split(",")
+        tokens.drop(1).count(_ != "")
+      })
+      .reduce(_ + _)
+
+    sc.parallelize(Seq(output)).coalesce(1).saveAsTextFile(args(1))
   }
 }

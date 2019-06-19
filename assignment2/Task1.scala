@@ -8,9 +8,17 @@ object Task1 {
 
     val textFile = sc.textFile(args(0))
 
-    // modify this code
-    val output = textFile.map(x => x);
-    
+    val output = textFile
+        .map(line => {
+          val tokens = line.split(",")
+          val movieName = tokens(0)
+          val rates = tokens.drop(1).map(num => {if (num == "") 0 else num.toInt})
+          val max = rates.max
+          val res = rates.indices.filter(r => rates(r) == max).map(_ + 1).mkString(",")
+          (movieName, res)
+        })
+        .map(s => s._1 + "," + s._2)
+
     output.saveAsTextFile(args(1))
   }
 }
