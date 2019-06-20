@@ -10,7 +10,7 @@ object Task1 {
 
     val output = textFile
         .map(line => {
-          val tokens = line.split(",")
+          val tokens = line.split(",",-1)
           val movieName = tokens(0)
           val rates = tokens.drop(1).map(num => {if (num == "") 0 else num.toInt})
           val max = rates.max
