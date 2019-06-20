@@ -10,7 +10,7 @@ object Task2 {
 
     val output = textFile
       .map(line => {
-        val tokens = line.split(",")
+        val tokens = line.split(",",-1)
         tokens.drop(1).count(_ != "")
       })
       .reduce(_ + _)

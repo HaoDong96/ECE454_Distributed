@@ -10,7 +10,7 @@ object Task3 {
 
     val output = textFile
       .flatMap(line => {
-        val rates = line.split(",").drop(1)
+        val rates = line.split(",",-1).drop(1)
         (for {i <- rates.indices} yield (i + 1, if (rates(i) == "") 0 else 1)).toList
       })
       .reduceByKey(_ + _)
