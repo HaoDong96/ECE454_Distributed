@@ -11,6 +11,7 @@ import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.ArrayPrimitiveWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -72,7 +73,7 @@ public class Task4 {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             Configuration configuration = context.getConfiguration();
-            Path path = new Path("/output_hadoop/mediumFile");
+            Path path = new Path("job1Output/part-r-00000");
             Text key = new Text();
             ArrayPrimitiveWritable value = new ArrayPrimitiveWritable();
             SequenceFile.Reader reader = new SequenceFile.Reader(context.getConfiguration(), SequenceFile.Reader.file(path));
@@ -117,11 +118,17 @@ public class Task4 {
         // add code here
         job1.setMapperClass(MyMapper1.class);
         job1.setReducerClass(MyReducer1.class);
+        job1.setMapOutputKeyClass(Text.class);
+        job1.setMapOutputValueClass(ArrayPrimitiveWritable.class);
         job1.setOutputKeyClass(Text.class);
         job1.setOutputValueClass(ArrayPrimitiveWritable.class);
         job1.setOutputFormatClass(SequenceFileOutputFormat.class);
         TextInputFormat.addInputPath(job1, new Path(otherArgs[0]));
-        TextOutputFormat.setOutputPath(job1, new Path("/output_hadoop/mediumFile"));
+        TextOutputFormat.setOutputPath(job1, new Path("job1Output"));
+
+        // Delete the output directory if it exists already.
+        Path outputDir = new Path("job1Output");
+        FileSystem.get(conf).delete(outputDir, true);
 
 //        DistributedCache.addCacheFile(new Path("mediumFile").toUri(), job1.getConfiguration());
 
