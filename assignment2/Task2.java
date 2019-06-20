@@ -53,6 +53,7 @@ public class Task2 {
 
         Job job = new Job(conf, "Task2");
         job.setJarByClass(Task2.class);
+        job.setNumReduceTasks(1);
 
         // add code here
         job.setMapperClass(MyMapper.class);
