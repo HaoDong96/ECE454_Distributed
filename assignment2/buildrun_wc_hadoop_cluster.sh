@@ -1,7 +1,7 @@
 #!/bin/sh
 
 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-export CLASSPATH=`hadoop classpath`
+export CLASSPATH=`$HADOOP_HOME/bin/hadoop classpath`
 
 echo -n "Enter Task File:"
 read RUN_FILE
