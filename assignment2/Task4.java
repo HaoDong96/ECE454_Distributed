@@ -123,6 +123,7 @@ public class Task4 {
         job1.setOutputKeyClass(Text.class);
         job1.setOutputValueClass(ArrayPrimitiveWritable.class);
         job1.setOutputFormatClass(SequenceFileOutputFormat.class);
+        job1.setNumReduceTasks(1);
         TextInputFormat.addInputPath(job1, new Path(otherArgs[0]));
         TextOutputFormat.setOutputPath(job1, new Path("job1Output"));
 
