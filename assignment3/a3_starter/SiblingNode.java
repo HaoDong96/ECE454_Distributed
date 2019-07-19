@@ -38,13 +38,16 @@ public class SiblingNode {
 }
 
 class ThriftConnection {
-    private KeyValueService.Client client;
+    private TSocket sock;
     private TTransport transport;
+    private TProtocol protocol;
+    private KeyValueService.Client client;
+
 
     public ThriftConnection(String host, int port) {
-        TSocket sock = new TSocket(host, port);
+        this.sock = new TSocket(host, port);
         this.transport = new TFramedTransport(sock);
-        TProtocol protocol = new TBinaryProtocol(transport);
+        this.protocol = new TBinaryProtocol(transport);
         this.client = new KeyValueService.Client(protocol);
     }
 

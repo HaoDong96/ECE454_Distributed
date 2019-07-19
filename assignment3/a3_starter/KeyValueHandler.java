@@ -1,6 +1,5 @@
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.thrift.TException;
-import org.apache.thrift.transport.TTransportException;
 
 import java.util.Map;
 import java.util.Optional;
@@ -20,7 +19,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
     private Role role;
     private Map<String, Integer> backupOpsMap;
     private AtomicInteger primaryOps;
-    private Optional<ThriftConnection> connectionToSibling;
+    private Optional<SiblingNode> siblingNode;
 
     public KeyValueHandler(CuratorFramework curClient, String zkNode) {
         this.curClient = curClient;
@@ -39,14 +38,8 @@ public class KeyValueHandler implements KeyValueService.Iface {
         return role;
     }
 
-    public void setConnectionToSibling(ThriftConnection connection) {
-        this.connectionToSibling = Optional.ofNullable(connection);
-        try {
-            if (connectionToSibling.isPresent())
-                connectionToSibling.get().openTransport();
-        } catch (TException e) {
-            e.printStackTrace();
-        }
+    public void setSiblingNode(Optional<SiblingNode> siblingNode) {
+        this.siblingNode = siblingNode;
     }
 
     @Override
@@ -62,7 +55,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
     public void put(String key, String value) throws org.apache.thrift.TException {
         myMap.put(key, value);
         System.out.println(key + "->" + value + " has been added to primary");
-        if (role == Role.PRIMARY && connectionToSibling.isPresent()) {
+        if (role == Role.PRIMARY && siblingNode.isPresent()) {
             replicateCore(key, value, primaryOps.addAndGet(1));
         }
     }
@@ -84,8 +77,10 @@ public class KeyValueHandler implements KeyValueService.Iface {
 
     public void replicateCore(String key, String value, int primaryOps) {
         try {
-            if (connectionToSibling.isPresent()) {
-                KeyValueService.Client client = connectionToSibling.get().getClient();
+            if (siblingNode.isPresent()) {
+                ThriftConnection connection = siblingNode.get().getNewConnection();
+                connection.openTransport();
+                KeyValueService.Client client = connection.getClient();
                 client.replicate(key, value, primaryOps);
             }
         } catch (TException e) {

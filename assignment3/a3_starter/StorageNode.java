@@ -104,15 +104,7 @@ public class StorageNode implements CuratorWatcher {
         Optional<SiblingNode> siblingNodeOption = SiblingNode.querySibling(nodes, keyValueHandler.getRole());
         System.out.println(nodes);
 
-        if (siblingNodeOption.isPresent()) {
-            SiblingNode siblingNode = siblingNodeOption.get();
-            ThriftConnection connection = siblingNode.getNewConnection();
-            keyValueHandler.setConnectionToSibling(connection);
-            System.out.println("Connection to sibling established.");
-        } else {
-            System.out.println("No sibling found. Failed to set up connection.");
-            keyValueHandler.setConnectionToSibling(null);
-        }
+        keyValueHandler.setSiblingNode(siblingNodeOption);
     }
 
     @Override
