@@ -41,6 +41,12 @@ public class KeyValueHandler implements KeyValueService.Iface {
 
     public void setConnectionToSibling(ThriftConnection connection) {
         this.connectionToSibling = Optional.ofNullable(connection);
+        try {
+            if (connectionToSibling.isPresent())
+                connectionToSibling.get().openTransport();
+        } catch (TException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -80,7 +86,6 @@ public class KeyValueHandler implements KeyValueService.Iface {
         try {
             if (connectionToSibling.isPresent()) {
                 KeyValueService.Client client = connectionToSibling.get().getClient();
-                connectionToSibling.get().openTransport();
                 client.replicate(key, value, primaryOps);
             }
         } catch (TException e) {
