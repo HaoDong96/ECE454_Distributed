@@ -1,3 +1,4 @@
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
@@ -13,6 +14,7 @@ public class SiblingNode {
     private TTransport transport;
 
     static Optional<SiblingNode> querySibling(List<String> nodes, Role role) {
+
         assert nodes.size() <= 2;
         if (nodes.size() == 1)
             return Optional.empty();

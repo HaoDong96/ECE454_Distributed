@@ -93,8 +93,15 @@ public class StorageNode implements CuratorWatcher {
         System.out.println("Role change for node " + serverString + " from " + original + " to " + keyValueHandler.getRole());
     }
 
-    void setUpConnection(List<String> children) {
-        Optional<SiblingNode> siblingNodeOption = SiblingNode.querySibling(children, keyValueHandler.getRole());
+    void setUpConnection(List<String> children) throws Exception {
+
+        List<String> nodes = new LinkedList<>();
+        for (String child : children) {
+            byte[] data = curClient.getData().forPath(zkName + "/" + child);
+            String strData = new String(data);
+            nodes.add(strData);
+        }
+        Optional<SiblingNode> siblingNodeOption = SiblingNode.querySibling(nodes, keyValueHandler.getRole());
 
         if (siblingNodeOption.isPresent()) {
             SiblingNode siblingNode = siblingNodeOption.get();
