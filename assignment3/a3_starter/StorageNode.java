@@ -94,7 +94,7 @@ public class StorageNode implements CuratorWatcher {
     }
 
     void setUpConnection(List<String> children) throws Exception {
-
+        Collections.sort(children);
         List<String> nodes = new LinkedList<>();
         for (String child : children) {
             byte[] data = curClient.getData().forPath(zkName + "/" + child);
