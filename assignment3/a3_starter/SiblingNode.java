@@ -18,7 +18,6 @@ public class SiblingNode {
         assert nodes.size() <= 2;
         if (nodes.size() == 1)
             return Optional.empty();
-        Collections.sort(nodes);
         String sibling;
         sibling = role == Role.PRIMARY ? nodes.get(1) : nodes.get(0);
         String host = sibling.split(":")[0];
