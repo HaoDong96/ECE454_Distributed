@@ -55,6 +55,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
     @Override
     public void put(String key, String value) throws org.apache.thrift.TException {
         myMap.put(key, value);
+        System.out.println(key + "->" + value + " has been added to primary");
         if (role == Role.PRIMARY && connectionToSibling.isPresent()) {
             replicateCore(key, value, primaryOps.addAndGet(1));
         }
@@ -64,10 +65,12 @@ public class KeyValueHandler implements KeyValueService.Iface {
     public void replicate(String key, String value, int primaryOps) throws TException {
         if (backupOpsMap.containsKey(key)) {
             if (primaryOps >= backupOpsMap.get(key)) {
+                System.out.println(key + "->" + value + " has been added to backup (overwrite)");
                 myMap.put(key, value);
                 backupOpsMap.put(key, primaryOps);
             }
         } else {
+            System.out.println(key + "->" + value + " has been added to backup");
             myMap.put(key, value);
             backupOpsMap.put(key, primaryOps);
         }
