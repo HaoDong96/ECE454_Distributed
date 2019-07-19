@@ -55,11 +55,13 @@ class ThriftConnection {
         return client;
     }
 
-    public void openTransport() throws TTransportException {
-        transport.open();
+    public void openConnection() throws TTransportException {
+        if (!transport.isOpen())
+            transport.open();
     }
 
     void closeConnection() {
-        transport.close();
+        if (transport.isOpen())
+            transport.close();
     }
 }

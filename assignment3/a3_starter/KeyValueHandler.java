@@ -77,15 +77,17 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public void replicateCore(String key, String value, int primaryOps) {
-        try {
-            if (siblingNode.isPresent()) {
-                ThriftConnection connection = siblingNode.get().getNewConnection();
-                connection.openTransport();
-                KeyValueService.Client client = connection.getClient();
+        if (siblingNode.isPresent()) {
+            ThriftConnection connection = siblingNode.get().getNewConnection();
+            KeyValueService.Client client = connection.getClient();
+            try {
+                connection.openConnection();
                 client.replicate(key, value, primaryOps);
+            } catch (TException e) {
+                e.printStackTrace();
+            } finally {
+                connection.closeConnection();
             }
-        } catch (TException e) {
-            e.printStackTrace();
         }
     }
 
