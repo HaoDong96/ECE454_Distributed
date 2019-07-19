@@ -68,6 +68,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
                 myMap.put(key, value);
                 backupOpsMap.put(key, primaryOps);
             }
+            System.out.println(key + "->" + value + " NOT ADDED (TOO OLD)");
         } else {
             System.out.println(key + "->" + value + " has been added to backup");
             myMap.put(key, value);
