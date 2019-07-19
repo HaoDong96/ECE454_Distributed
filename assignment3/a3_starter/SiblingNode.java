@@ -14,7 +14,6 @@ public class SiblingNode {
     int port;
 
     static Optional<SiblingNode> querySibling(List<String> nodes, Role role) {
-
         assert nodes.size() <= 2;
         if (nodes.size() == 1)
             return Optional.empty();
