@@ -55,7 +55,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
     public void put(String key, String value) throws org.apache.thrift.TException {
         myMap.put(key, value);
         if (role == Role.PRIMARY && siblingNode.isPresent()) {
-            replicateCore(key, value, primaryOps.addAndGet(1));
+            replicateCaller(key, value, primaryOps.addAndGet(1));
         }
     }
 
@@ -72,7 +72,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
         }
     }
 
-    public void replicateCore(String key, String value, int primaryOps) {
+    public void replicateCaller(String key, String value, int primaryOps) {
         if (siblingNode.isPresent()) {
             ThriftConnection connection = siblingNode.get().getNewConnection();
             KeyValueService.Client client = connection.getClient();
