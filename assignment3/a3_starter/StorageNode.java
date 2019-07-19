@@ -101,6 +101,7 @@ public class StorageNode implements CuratorWatcher {
             String strData = new String(data);
             nodes.add(strData);
         }
+        System.out.println(nodes);
         Optional<SiblingNode> siblingNodeOption = SiblingNode.querySibling(nodes, keyValueHandler.getRole());
         System.out.println("Setting up connection to siblingOption:");
         System.out.println(siblingNodeOption);
