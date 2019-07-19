@@ -35,6 +35,11 @@ public class SiblingNode {
         return new ThriftConnection(host, port);
     }
 
+    @Override
+    public String toString() {
+        return host + ":" + port;
+    }
+
 }
 
 class ThriftConnection {
