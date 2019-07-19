@@ -112,6 +112,9 @@ public class StorageNode implements CuratorWatcher {
         List<String> children = curClient.getChildren().usingWatcher(this).forPath(zkName);
         identifyRole(children);
         setUpConnection(children);
+        if (keyValueHandler.getRole() == Role.PRIMARY && keyValueHandler.getSiblingNode().isPresent()) {
+            keyValueHandler.transferCaller();
+        }
     }
 
 

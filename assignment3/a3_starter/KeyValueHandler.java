@@ -1,8 +1,7 @@
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.thrift.TException;
 
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,6 +41,10 @@ public class KeyValueHandler implements KeyValueService.Iface {
         this.siblingNode = siblingNode;
     }
 
+    public Optional<SiblingNode> getSiblingNode() {
+        return siblingNode;
+    }
+
     @Override
     public String get(String key) throws TException {
         String ret = myMap.get(key);
@@ -72,6 +75,14 @@ public class KeyValueHandler implements KeyValueService.Iface {
         }
     }
 
+    @Override
+    public void transfer(List<String> keys, List<String> values) throws TException {
+        System.out.println("Receiving k-v map from primary...");
+        for (int i = 0; i < keys.size(); i++) {
+            myMap.putIfAbsent(keys.get(i), values.get(i));
+        }
+    }
+
     public void replicateCaller(String key, String value, int primaryOps) {
         if (siblingNode.isPresent()) {
             ThriftConnection connection = siblingNode.get().getNewConnection();
@@ -87,4 +98,27 @@ public class KeyValueHandler implements KeyValueService.Iface {
         }
     }
 
+    public void transferCaller() {
+        System.out.println("Transferring k-v map to backup...");
+        List<String> keys = new LinkedList<>();
+        List<String> values = new LinkedList<>();
+
+        for (String key : myMap.keySet()) {
+            keys.add(key);
+            values.add(myMap.get(key));
+        }
+
+        if (siblingNode.isPresent()) {
+            ThriftConnection connection = siblingNode.get().getNewConnection();
+            KeyValueService.Client client = connection.getClient();
+            try {
+                connection.openConnection();
+                client.transfer(keys, values);
+            } catch (TException e) {
+                e.printStackTrace();
+            } finally {
+                connection.closeConnection();
+            }
+        }
+    }
 }
