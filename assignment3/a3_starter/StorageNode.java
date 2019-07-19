@@ -102,9 +102,8 @@ public class StorageNode implements CuratorWatcher {
             nodes.add(strData);
         }
         Optional<SiblingNode> siblingNodeOption = SiblingNode.querySibling(nodes, keyValueHandler.getRole());
-        System.out.println(nodes);
-
-        assert !siblingNodeOption.isPresent() || (!siblingNodeOption.get().host.equals(this.host) || siblingNodeOption.get().port != this.port);
+        System.out.println("Setting up connection to siblingOption:");
+        System.out.println(siblingNodeOption);
 
         keyValueHandler.setSiblingNode(siblingNodeOption);
     }
