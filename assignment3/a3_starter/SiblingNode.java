@@ -10,8 +10,8 @@ import java.util.Optional;
 import java.util.*;
 
 public class SiblingNode {
-    private TSocket sock;
-    private TTransport transport;
+    String host;
+    int port;
 
     static Optional<SiblingNode> querySibling(List<String> nodes, Role role) {
 
@@ -27,12 +27,12 @@ public class SiblingNode {
     }
 
     public SiblingNode(String host, int port) {
-        sock = new TSocket(host, port);
-        transport = new TFramedTransport(sock);
+        this.host = host;
+        this.port = port;
     }
 
     ThriftConnection getNewConnection() {
-        return new ThriftConnection(transport);
+        return new ThriftConnection(host, port);
     }
 
 }
@@ -41,8 +41,9 @@ class ThriftConnection {
     private KeyValueService.Client client;
     private TTransport transport;
 
-    public ThriftConnection(TTransport transport) {
-        this.transport = transport;
+    public ThriftConnection(String host, int port) {
+        TSocket sock = new TSocket(host, port);
+        this.transport = new TFramedTransport(sock);
         TProtocol protocol = new TBinaryProtocol(transport);
         this.client = new KeyValueService.Client(protocol);
     }
