@@ -19,6 +19,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
     private Map<String, Integer> backupOpsMap;
     private AtomicInteger primaryOps;
     private Optional<SiblingNode> siblingNode;
+    private Map<Integer, Boolean> ackMap;
 
     public KeyValueHandler(CuratorFramework curClient, String zkNode) {
         this.curClient = curClient;
@@ -26,6 +27,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
         this.role = Role.INIT;
         myMap = new ConcurrentHashMap<>();
         backupOpsMap = new ConcurrentHashMap<>();
+        ackMap = new ConcurrentHashMap<>();
         primaryOps = new AtomicInteger(0);
     }
 
@@ -73,14 +75,21 @@ public class KeyValueHandler implements KeyValueService.Iface {
             myMap.put(key, value);
             backupOpsMap.put(key, primaryOps);
         }
+        ackCaller(primaryOps);
     }
 
     @Override
-    public void transfer(List<String> keys, List<String> values) throws TException {
+    public void transfer(List<String> keys, List<String> values, int primaryOps) throws TException {
         System.out.println("Receiving k-v map from primary...");
         for (int i = 0; i < keys.size(); i++) {
             myMap.putIfAbsent(keys.get(i), values.get(i));
         }
+        ackCaller(primaryOps);
+    }
+
+    @Override
+    public void ack(int ackOps) {
+        ackMap.put(ackOps, true);
     }
 
     public void replicateCaller(String key, String value, int primaryOps) {
@@ -88,9 +97,13 @@ public class KeyValueHandler implements KeyValueService.Iface {
             ThriftConnection connection = siblingNode.get().getNewConnection();
             KeyValueService.Client client = connection.getClient();
             try {
+                ackMap.put(primaryOps, false);
                 connection.openConnection();
                 client.replicate(key, value, primaryOps);
-            } catch (TException e) {
+                while (!ackMap.get(primaryOps)) {
+                    Thread.sleep(1);
+                }
+            } catch (TException | InterruptedException e) {
                 e.printStackTrace();
             } finally {
                 connection.closeConnection();
@@ -112,8 +125,27 @@ public class KeyValueHandler implements KeyValueService.Iface {
             ThriftConnection connection = siblingNode.get().getNewConnection();
             KeyValueService.Client client = connection.getClient();
             try {
+                ackMap.put(primaryOps.get(), false);
                 connection.openConnection();
-                client.transfer(keys, values);
+                client.transfer(keys, values, primaryOps.get());
+                while (!ackMap.get(primaryOps.get())) {
+                    Thread.sleep(1);
+                }
+            } catch (TException | InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                connection.closeConnection();
+            }
+        }
+    }
+
+    public void ackCaller(int ackOps) {
+        if (siblingNode.isPresent()) {
+            ThriftConnection connection = siblingNode.get().getNewConnection();
+            KeyValueService.Client client = connection.getClient();
+            try {
+                connection.openConnection();
+                client.ack(ackOps);
             } catch (TException e) {
                 e.printStackTrace();
             } finally {
