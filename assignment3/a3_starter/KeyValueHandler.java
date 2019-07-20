@@ -104,7 +104,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
                     Thread.sleep(1);
                 }
             } catch (TException | InterruptedException e) {
-                e.printStackTrace();
+                System.out.println(e.getClass() + " Exception thrown");
             } finally {
                 connection.closeConnection();
             }
@@ -132,7 +132,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
                     Thread.sleep(1);
                 }
             } catch (TException | InterruptedException e) {
-                e.printStackTrace();
+                System.out.println(e.getClass() + " Exception thrown");
             } finally {
                 connection.closeConnection();
             }
@@ -144,7 +144,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.out.println(e.getClass() + " Exception thrown");
             }
         }
         if (siblingNode.isPresent()) {
@@ -154,7 +154,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
                 connection.openConnection();
                 client.ack(ackOps);
             } catch (TException e) {
-                e.printStackTrace();
+                System.out.println(e.getClass() + " Exception thrown");
             } finally {
                 connection.closeConnection();
             }
