@@ -140,6 +140,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public void ackCaller(int ackOps) {
+        System.out.println(siblingNode);
         if (siblingNode.isPresent()) {
             ThriftConnection connection = siblingNode.get().getNewConnection();
             KeyValueService.Client client = connection.getClient();
