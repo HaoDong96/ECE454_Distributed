@@ -66,11 +66,13 @@ public class A4Application {
         KTable<String, Pair<Integer, Integer>> allEntryKTable = studentKTable.outerJoin(classroomKTable, (v1, v2) ->
                 new Pair<>(getOrElse(v1, 0), getOrElse(v2, Integer.MAX_VALUE)));
 
-        KStream<String, String> result = allEntryKTable
+        KTable<String, Integer> diffKTable = allEntryKTable
                 .mapValues(pair -> pair.v1 - pair.v2)
                 .toStream()
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Integer()))
-                .reduce((v1, v2) -> v2)
+                .reduce((v1, v2) -> v2);
+
+        KStream<String, String> result = diffKTable
                 .toStream()
                 .join(allEntryKTable, Pair::new)
                 // (RoomID, (Diff, (Occupied, Capacity)))
