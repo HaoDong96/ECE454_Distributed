@@ -73,9 +73,9 @@ public class A4Application {
                 .reduce((v1, v2) -> v2)
                 .toStream()
                 .join(allEntryKTable, Pair::new)
-                .filter((k, v) -> v.v1 > 0)
+                .filter((k, v) -> v.v1 > 0) // (RoomID, (Diff, (Occupied, Capacity)))
                 .map((k, v) -> {
-                    String res = v.v2.v1.equals(v.v2.v2) ? "OK" : v.v2.v2.toString();
+                    String res = v.v2.v1.equals(v.v2.v2) ? "OK" : v.v2.v1.toString();
                     return KeyValue.pair(k, res);
                 });
 
