@@ -28,6 +28,27 @@ public class A4Application {
             return e;
     }
 
+    static int makeInt(int i, int j) {
+        return i * 40000 + j;
+    }
+
+    static Pair<Integer, Integer> readInt(int n) {
+        int[] res = new int[2];
+        if (n >= 0) {
+            res[1] = n % 40000;
+            if (res[1] > 20000) res[1] -= 40000;
+            res[0] = (n - res[1]) / 40000;
+        } else {
+            n = -n;
+            res[1] = n % 40000;
+            if (res[1] > 20000) res[1] -= 40000;
+            res[0] = (n - res[1]) / 40000;
+            res[0] = -res[0];
+            res[1] = -res[1];
+        }
+        return new Pair<>(res[0], res[1]);
+    }
+
     public static void main(String[] args) throws Exception {
         // do not modify the structure of the command line
         String bootstrapServers = args[0];
@@ -66,17 +87,21 @@ public class A4Application {
         KTable<String, Pair<Integer, Integer>> allEntryKTable = studentKTable.outerJoin(classroomKTable, (v1, v2) ->
                 new Pair<>(getOrElse(v1, 0), getOrElse(v2, Integer.MAX_VALUE)));
 
-        KTable<String, Integer> diffKTable = allEntryKTable
+        KStream<String, String> result = allEntryKTable
                 .mapValues(pair -> pair.v1 - pair.v2)
                 .toStream()
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Integer()))
-                .reduce((v1, v2) -> v2);
-
-        KStream<String, String> result = diffKTable
+                .reduce((v1, v2) -> {
+                    Pair<Integer, Integer> prev = readInt(v1);
+                    return makeInt(prev.v2, v2)
+                })
                 .toStream()
                 .join(allEntryKTable, Pair::new)
-                // (RoomID, (Diff, (Occupied, Capacity)))
-                .filter((k, v) -> v.v2.v1 - v.v2.v2 > 0 || (v.v2.v1.equals(v.v2.v2) && v.v1 > 0))
+                // (RoomID, (lastTwo, (Occupied, Capacity)))
+                .filter((k, v) -> {
+                    Pair<Integer, Integer> lastTwo = readInt(v.v1);
+                    return v.v2.v1 - v.v2.v2 > 0 || (v.v2.v1.equals(v.v2.v2) && lastTwo.v1 > lastTwo.v2);
+                })
                 .map((k, v) -> {
                     String res = v.v2.v1.equals(v.v2.v2) ? "OK" : v.v2.v1.toString();
                     return KeyValue.pair(k, res);
