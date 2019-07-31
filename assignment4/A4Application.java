@@ -93,7 +93,7 @@ public class A4Application {
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Integer()))
                 .reduce((v1, v2) -> {
                     Pair<Integer, Integer> prev = readInt(v1);
-                    return makeInt(prev.v2, v2)
+                    return makeInt(prev.v2, v2);
                 })
                 .toStream()
                 .join(allEntryKTable, Pair::new)
